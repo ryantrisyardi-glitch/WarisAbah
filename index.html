@@ -42,6 +42,26 @@ tr.tot td{font-weight:700;background:#f0f3f8;border-top:2px solid var(--navy)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.tabs button{border:1px solid var(--line);background:#fff;padding:6px 12px;border-radius:99px;cursor:pointer;font:inherit;font-size:13px}.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 footer{text-align:center;color:var(--mut);font-size:12px;padding:20px}
 [hidden]{display:none!important}
+.bar{flex-wrap:wrap}.tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}.tabs button{white-space:nowrap}
+@media(max-width:640px){
+ body{font-size:15px}
+ .bar{padding:10px 14px;gap:8px}.brand small{display:none}.brand b{font-size:14px}.logo{width:32px;height:32px}
+ #who{display:block;width:100%;order:3;font-size:11px;overflow:hidden;text-overflow:ellipsis}
+ main{padding:14px 12px 40px}.card{padding:16px;border-radius:10px;margin-bottom:14px}
+ input,select,textarea{font-size:16px;padding:12px}
+ .kpi b{font-size:20px}
+ #admLock .btn,#pSave{width:100%;padding:13px}
+ .tw{overflow:visible}table{min-width:0}thead{display:none}
+ table,tbody,tr,td{display:block;width:100%}
+ tr{border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden;background:#fff}
+ td{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:right;padding:9px 12px;white-space:normal}
+ td::before{content:attr(data-label);color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;text-align:left;flex-shrink:0}
+ td:first-child{background:var(--navy);color:#fff;font-size:15px;justify-content:flex-start}td:first-child::before{display:none}
+ tr.tot{border-color:var(--navy)}tr.tot td{border-top:0}tr.tot td:first-child{background:var(--navy2)}
+ .pb{min-width:0;width:110px;margin-left:auto}
+ .pay{flex-direction:column;align-items:flex-start}.pay>div:last-child{width:100%;justify-content:space-between}
+ footer{padding:16px 12px}
+}
 </style>
 </head>
 <body>
@@ -58,8 +78,8 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:20px}
     <p class="sub" id="modeTxt"></p></div><div id="status"></div></div>
     <div class="grid g3">
       <div><label>Luas Tanah (m²)</label><input id="luas" inputmode="decimal" disabled></div>
-      <div><label id="lblNilai">Estimasi Harga Rumah & Tanah (Rp)</label><input id="nilai" inputmode="numeric"></div>
-      <div><label>Estimasi Cicilan per Bulan (Rp)</label><input id="cicil" inputmode="numeric"></div>
+      <div><label id="lblNilai">Estimasi Harga Rumah & Tanah (Rp)</label><input id="nilai" inputmode="numeric" placeholder="0"></div>
+      <div><label>Estimasi Cicilan per Bulan (Rp)</label><input id="cicil" inputmode="numeric" placeholder="0"></div>
     </div>
     <div id="admLock" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap" hidden></div>
   </section>
@@ -106,9 +126,9 @@ const CLOUDINARY = {cloudName:"duhnlnhuj", uploadPreset:"WarisAbah", folder:"War
 const ADMIN_EMAIL = "ryan.trisyardi@gmail.com";   // harus sama dengan di firestore.rules
 const LUAS = 115;
 /* ====================================================================== */
-const ready = FIREBASE.apiKey !== "AIzaSyBgfr3IqV354GiduuZ9cxphvJdoUV9sFa8";
+const ready = !!FIREBASE.apiKey && !/GANTI/i.test(FIREBASE.apiKey) && !/GANTI/i.test(FIREBASE.projectId);
 const HEIRS = [{k:"neneng",n:"Alm. Wa Neneng",pay:1},{k:"iis",n:"Wa Iis",pay:1},{k:"usep",n:"Wa Usep",pay:1},{k:"uli",n:"Uli (Pembeli)",pay:0}];
-const S = {nilai:500000000,cicil:1500000,locked:false,cfgCicil:null,touched:false,pays:[],user:null,tab:"all"};
+const S = {nilai:0,cicil:0,locked:false,cfgCicil:null,touched:false,pays:[],user:null,tab:"all"};
 const $ = id => document.getElementById(id);
 const rp = n => "Rp " + Math.round(n).toLocaleString("id-ID");
 const nm = (n,d=2) => n.toLocaleString("id-ID",{maximumFractionDigits:d});
@@ -160,6 +180,7 @@ function render(){
    <tr><td><b>Hak Abah</b></td><td>${nm(LUAS/2,3)}</td>${R.map(r=>`<td>${nm(r.a,3)}</td>`).join("")}</tr>
    <tr class="tot"><td>Total</td><td>${nm(LUAS,3)}</td>${R.map(r=>`<td>${nm(r.l,3)}</td>`).join("")}</tr></tbody></table>`;
 
+  lab($("tbl")); lab($("land"));
   $("tabs").innerHTML = [{k:"all",n:"Semua"},...HEIRS.filter(h=>h.pay)].map(h=>`<button class="${S.tab===h.k?"on":""}" data-t="${h.k}">${h.n}</button>`).join("");
   const list = S.pays.filter(p=>S.tab==="all"||p.heir===S.tab);
   $("hist").innerHTML = list.length ? list.map(p=>{
@@ -177,6 +198,7 @@ function render(){
   $("auth").textContent = S.user ? "Keluar" : "Masuk Superadmin";
   $("who").textContent = S.user ? (adm ? "Superadmin · " : "Bukan superadmin · ") + S.user.email : "";
 }
+function lab(el){el.querySelectorAll("table").forEach(t=>{const h=[...t.querySelectorAll("th")].map(x=>x.textContent);t.querySelectorAll("tbody tr").forEach(r=>{let i=0;[...r.children].forEach(td=>{td.dataset.label=td.colSpan>1?"Keterangan":(h[i]||"");i+=td.colSpan||1;});});});}
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ---------- input ---------- */
