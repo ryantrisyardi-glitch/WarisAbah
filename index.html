@@ -2,7 +2,15 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2a47">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Waris Keluarga">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Manajemen Waris Keluarga · Abah & Mamah</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -10,7 +18,8 @@
 :root{--navy:#0f2a47;--navy2:#1b4272;--acc:#c8963e;--bg:#f3f5f8;--card:#fff;--line:#e2e7ee;--tx:#1c2733;--mut:#6b7889;--ok:#1a7f5a;--warn:#b7791f;--bad:#c0392b}
 *{box-sizing:border-box}html,body{margin:0}
 body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5}
-header{background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
+header{background:var(--navy);color:#fff;position:sticky;top:0;z-index:5;padding-top:env(safe-area-inset-top,0)}
+body{padding-bottom:env(safe-area-inset-bottom,0)}
 .bar{max-width:1180px;margin:auto;padding:14px 20px;display:flex;align-items:center;gap:14px;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:12px}.logo{width:36px;height:36px;border-radius:8px;background:var(--acc);display:grid;place-items:center;font-weight:700;color:var(--navy)}
 .brand b{display:block;font-size:15px}.brand small{opacity:.7;font-size:12px}
@@ -72,7 +81,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:20px}
 <body>
 <header><div class="bar">
   <div class="brand"><div class="logo">W</div><div><b>Manajemen Waris Keluarga</b><small>Tanah & Rumah Abah dan Mamah</small></div></div>
-  <div style="display:flex;gap:10px;align-items:center"><span id="who" style="font-size:12px;opacity:.85"></span><button class="btn light" id="auth">Masuk Superadmin</button></div>
+  <div style="display:flex;gap:10px;align-items:center"><span id="who" style="font-size:12px;opacity:.85"></span><button class="btn ghost" id="install" hidden>Pasang Aplikasi</button><button class="btn light" id="auth">Masuk Superadmin</button></div>
 </div></header>
 
 <main>
@@ -159,6 +168,19 @@ const CLOUDINARY = {cloudName:"duhnlnhuj", uploadPreset:"WarisAbah", folder:"War
 const ADMIN_EMAIL = "ryan.trisyardi@gmail.com";   // harus sama dengan di firestore.rules
 const LUAS = 115;
 /* ====================================================================== */
+/* ---- PWA: service worker & tombol pasang ---- */
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+const inst = document.getElementById("install");
+let deferredInstall = null;
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; if(!standalone) inst.hidden = false; });
+window.addEventListener("appinstalled", () => { inst.hidden = true; deferredInstall = null; });
+if(iOS && !standalone) inst.hidden = false;
+inst.onclick = async () => {
+  if(deferredInstall){ deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; inst.hidden = true; }
+  else alert("Di iPhone/iPad: buka lewat Safari, ketuk ikon Bagikan, lalu pilih 'Tambah ke Layar Utama'.");
+};
 const ready = !!FIREBASE.apiKey && !/GANTI/i.test(FIREBASE.apiKey) && !/GANTI/i.test(FIREBASE.projectId);
 const HEIRS = [{k:"neneng",n:"Alm. Wa Neneng",pay:1},{k:"iis",n:"Wa Iis",pay:1},{k:"usep",n:"Wa Usep",pay:1},{k:"uli",n:"Uli (Pembeli)",pay:0}];
 const DEF = {bphtb:5,npU:80000000,npW:300000000,pph:2.5,ajb:1,ajbShare:50,agen:2,skw:3000000,aphb:2500000,pnbp:500000,balik:500000,warisBefore:true};
@@ -340,7 +362,8 @@ if(ready){
   const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const Au = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-  const app = A.initializeApp(FIREBASE), auth = Au.getAuth(app), db = F.getFirestore(app);
+  const app = A.initializeApp(FIREBASE), auth = Au.getAuth(app);
+  let db; try{ db = F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})}); }catch(e){ db = F.getFirestore(app); }
   const cfgRef = F.doc(db,"config","main");
 
   F.onSnapshot(cfgRef, s=>{
