@@ -42,6 +42,11 @@ tr.tot td{font-weight:700;background:#f0f3f8;border-top:2px solid var(--navy)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.tabs button{border:1px solid var(--line);background:#fff;padding:6px 12px;border-radius:99px;cursor:pointer;font:inherit;font-size:13px}.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 footer{text-align:center;color:var(--mut);font-size:12px;padding:20px}
 [hidden]{display:none!important}
+.nav{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto}.nav button{border:1px solid var(--line);background:#fff;padding:10px 18px;border-radius:10px;cursor:pointer;font:inherit;font-weight:600;color:var(--navy);white-space:nowrap}.nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.hd{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.sw{display:flex;gap:8px;align-items:center;font-size:13px;text-transform:none;letter-spacing:0;color:var(--tx);cursor:pointer;margin:0;background:#eef4fb;padding:8px 12px;border-radius:8px}.sw input{width:auto;margin:0}
+.hint{font-size:11px;color:var(--mut);margin-top:4px;text-transform:none;letter-spacing:0;font-weight:400}
+.cmp{font-weight:700}ul.src{margin:0;padding-left:18px;color:var(--mut);font-size:13px}ul.src li{margin-bottom:6px}
 .bar{flex-wrap:wrap}.tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}.tabs button{white-space:nowrap}
 @media(max-width:640px){
  body{font-size:15px}
@@ -71,8 +76,10 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:20px}
 </div></header>
 
 <main>
+  <div class="nav" id="nav" hidden></div>
   <div id="cfgwarn" class="note w" hidden><b>Mode demo:</b> Firebase belum dikonfigurasi. Kalkulator tetap berfungsi, tetapi login, penguncian, dan pencatatan pelunasan belum aktif. Lihat PANDUAN_SETUP.md.</div>
 
+  <div id="v-main">
   <section class="card">
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><div><h2>Parameter Perhitungan</h2>
     <p class="sub" id="modeTxt"></p></div><div id="status"></div></div>
@@ -115,7 +122,33 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:20px}
     <h2>Riwayat Pelunasan</h2>
     <p class="sub">Dapat dilihat oleh seluruh anggota keluarga.</p>
     <div class="tabs" id="tabs"></div><div id="hist"></div>
+    <h2 style="margin-top:22px">Subtotal Pelunasan</h2>
+    <p class="sub">Angka ini sama dengan kolom <b>Terbayar</b> dan <b>Sisa</b> pada tabel Rincian Hak & Kewajiban Cicilan, sehingga bisa dicocokkan.</p>
+    <div class="tw" id="sub"></div>
   </section>
+  </div>
+
+  <div id="v-tax" hidden>
+    <section class="card">
+      <div class="hd"><div><h2>Estimasi Pajak & Biaya: Dijual vs Diwariskan Langsung</h2><p class="sub" id="taxSub"></p></div>
+      <label class="sw" id="swWrap" hidden><input type="checkbox" id="showTax"><span>Tampilkan tab ini ke pengunjung tanpa login</span></label></div>
+      <div class="note" id="taxNote"></div>
+      <div class="grid g4" id="tkpi"></div>
+    </section>
+    <section class="card"><h2>Skenario A · Rumah & Tanah Dijual</h2><p class="sub">Dijual ke pihak lain; hasil penjualan dibagi sesuai persentase hak.</p><div class="tw" id="tSale"></div></section>
+    <section class="card"><h2>Skenario B · Diwariskan Langsung</h2><p class="sub">Aset dibalik nama ke para ahli waris tanpa dijual.</p><div class="tw" id="tWaris"></div></section>
+    <section class="card"><h2>Perbandingan per Ahli Waris</h2><p class="sub">Biaya bersama dibagi sesuai persentase hak; BPHTB waris dihitung per ahli waris.</p><div class="tw" id="tHeir"></div></section>
+    <section class="card"><h2>Asumsi & Tarif</h2><p class="sub" id="pSub"></p><div class="grid g3" id="tparams"></div>
+      <div id="tAdmBtns" hidden style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="bTaxSave">Simpan Update</button><button class="btn danger" id="bTaxReset">Ubah ke Default</button></div>
+    </section>
+    <section class="card"><h2>Dasar Aturan & Catatan</h2><ul class="src">
+      <li><b>BPHTB:</b> tarif maksimal 5% (UU 1/2022 HKPD); Kota Cimahi menetapkan 5% (Perda Kota Cimahi 8/2023). Rumus: tarif × (NPOP − NPOPTKP).</li>
+      <li><b>NPOPTKP:</b> minimal Rp80 juta (perolehan pertama) dan minimal Rp300 juta untuk waris orang pribadi sedarah garis lurus satu derajat (UU HKPD Pasal 46). Angka default memakai batas minimal; mohon cocokkan dengan Perda/peraturan wali kota terbaru dan kantor pajak daerah Cimahi.</li>
+      <li><b>PPh final 2,5%</b> atas penghasilan dari pengalihan tanah/bangunan dibayar penjual. Pengalihan karena waris dapat dibebaskan dari PPh lewat Surat Keterangan Bebas (SKB).</li>
+      <li>Dasar pengenaan BPHTB adalah harga transaksi (jual) atau nilai pasar (waris), dengan batas bawah NJOP PBB tahun berjalan. Jika NJOP lebih tinggi dari nilai waris di aplikasi, BPHTB sebenarnya bisa lebih besar.</li>
+      <li>Biaya notaris/PPAT, SKW, PNBP, dan komisi agen adalah perkiraan umum dan bisa berbeda tiap kantor. Hasil ini hanya estimasi, bukan nasihat pajak. Konfirmasi ke notaris/PPAT dan Bapenda Cimahi sebelum bertransaksi.</li>
+    </ul></section>
+  </div>
 </main>
 <footer>Aplikasi internal keluarga · Perhitungan bersifat informatif sesuai kesepakatan keluarga.</footer>
 
@@ -128,7 +161,22 @@ const LUAS = 115;
 /* ====================================================================== */
 const ready = !!FIREBASE.apiKey && !/GANTI/i.test(FIREBASE.apiKey) && !/GANTI/i.test(FIREBASE.projectId);
 const HEIRS = [{k:"neneng",n:"Alm. Wa Neneng",pay:1},{k:"iis",n:"Wa Iis",pay:1},{k:"usep",n:"Wa Usep",pay:1},{k:"uli",n:"Uli (Pembeli)",pay:0}];
-const S = {nilai:0,cicil:0,locked:false,cfgCicil:null,touched:false,pays:[],user:null,tab:"all"};
+const DEF = {bphtb:5,npU:80000000,npW:300000000,pph:2.5,ajb:1,ajbShare:50,agen:2,skw:3000000,aphb:2500000,pnbp:500000,balik:500000,warisBefore:true};
+const PARAMS = [
+ {k:"bphtb",l:"Tarif BPHTB (%)",t:"%",h:"Perda Kota Cimahi 8/2023"},
+ {k:"npU",l:"NPOPTKP umum (Rp)",t:"Rp",h:"Batas minimal UU HKPD untuk perolehan pertama"},
+ {k:"npW",l:"NPOPTKP waris per ahli waris (Rp)",t:"Rp",h:"Batas minimal UU HKPD, garis lurus 1 derajat"},
+ {k:"pph",l:"PPh final penjualan (%)",t:"%",h:"Dibayar penjual atas harga jual"},
+ {k:"ajb",l:"Biaya PPAT/notaris jual beli (%)",t:"%",h:"Umumnya maksimal 1% dari harga"},
+ {k:"ajbShare",l:"Porsi biaya AJB ditanggung keluarga (%)",t:"%",h:"Sisanya ditanggung pembeli"},
+ {k:"agen",l:"Komisi agen/makelar (%)",t:"%",h:"Isi 0 jika dijual sendiri"},
+ {k:"skw",l:"Surat keterangan waris (Rp)",t:"Rp",h:"Kelurahan/kecamatan atau notaris"},
+ {k:"aphb",l:"Akta Pembagian Hak Bersama (Rp)",t:"Rp",h:"Biaya PPAT"},
+ {k:"pnbp",l:"PNBP BPN, cek & validasi waris (Rp)",t:"Rp",h:"Balik nama waris"},
+ {k:"balik",l:"Cek, validasi & PNBP balik nama jual beli (Rp)",t:"Rp",h:"Umumnya ditanggung pembeli"},
+ {k:"warisBefore",l:"Balik nama waris dulu sebelum dijual",t:"bool",h:"Umumnya wajib bila sertipikat masih atas nama Abah/Mamah"}];
+let P = {...DEF};
+const S = {view:"main",showTax:false,nilai:0,cicil:0,locked:false,cfgCicil:null,touched:false,pays:[],user:null,tab:"all"};
 const $ = id => document.getElementById(id);
 const rp = n => "Rp " + Math.round(n).toLocaleString("id-ID");
 const nm = (n,d=2) => n.toLocaleString("id-ID",{maximumFractionDigits:d});
@@ -180,6 +228,12 @@ function render(){
    <tr><td><b>Hak Abah</b></td><td>${nm(LUAS/2,3)}</td>${R.map(r=>`<td>${nm(r.a,3)}</td>`).join("")}</tr>
    <tr class="tot"><td>Total</td><td>${nm(LUAS,3)}</td>${R.map(r=>`<td>${nm(r.l,3)}</td>`).join("")}</tr></tbody></table>`;
 
+  const sr = HEIRS.filter(h=>h.pay&&(S.tab==="all"||h.k===S.tab)).map(h=>{ const rr=R.find(x=>x.k===h.k); return {n:h.n,c:S.pays.filter(p=>p.heir===h.k).length,paid:rr.paid,v:rr.v,rest:rr.rest}; });
+  const sa = k => sr.reduce((a,x)=>a+x[k],0);
+  $("sub").innerHTML = `<table><thead><tr><th>Penerima</th><th>Jml Transaksi</th><th>Subtotal Dibayar</th><th>Nilai Waris</th><th>Sisa</th></tr></thead><tbody>` +
+    sr.map(x=>`<tr><td><b>${x.n}</b></td><td>${x.c}</td><td>${rp(x.paid)}</td><td>${rp(x.v)}</td><td>${rp(x.rest)}</td></tr>`).join("") +
+    (sr.length>1?`<tr class="tot"><td>Total</td><td>${sa("c")}</td><td>${rp(sa("paid"))}</td><td>${rp(sa("v"))}</td><td>${rp(sa("rest"))}</td></tr>`:"") + `</tbody></table>`;
+  lab($("sub")); renderNav(); renderTax();
   lab($("tbl")); lab($("land"));
   $("tabs").innerHTML = [{k:"all",n:"Semua"},...HEIRS.filter(h=>h.pay)].map(h=>`<button class="${S.tab===h.k?"on":""}" data-t="${h.k}">${h.n}</button>`).join("");
   const list = S.pays.filter(p=>S.tab==="all"||p.heir===S.tab);
@@ -199,6 +253,75 @@ function render(){
   $("who").textContent = S.user ? (adm ? "Superadmin · " : "Bukan superadmin · ") + S.user.email : "";
 }
 function lab(el){el.querySelectorAll("table").forEach(t=>{const h=[...t.querySelectorAll("th")].map(x=>x.textContent);t.querySelectorAll("tbody tr").forEach(r=>{let i=0;[...r.children].forEach(td=>{td.dataset.label=td.colSpan>1?"Keterangan":(h[i]||"");i+=td.colSpan||1;});});});}
+function taxCalc(){
+  const N=S.nilai, R=calc(), r=P.bphtb/100, pp=P.warisBefore;
+  const bw = R.map(x=>r*Math.max(N*x.p-P.npW,0)), bwT = bw.reduce((a,b)=>a+b,0);
+  const pc = v => nm(v,2)+"%";
+  const sale = [
+    {l:"PPh final penjualan",b:N,r:pc(P.pph),t:N*P.pph/100,f:1},
+    {l:"BPHTB pembeli",b:Math.max(N-P.npU,0),r:pc(P.bphtb),t:r*Math.max(N-P.npU,0),f:0},
+    {l:"BPHTB waris (balik nama sebelum jual)",b:N,r:pc(P.bphtb)+", NPOPTKP "+rp(P.npW)+"/ahli waris",t:bwT,f:1,on:pp},
+    {l:"Surat keterangan waris",t:P.skw,f:1,on:pp},
+    {l:"PNBP, cek & validasi balik nama waris",t:P.pnbp,f:1,on:pp},
+    {l:"PPAT/notaris akta jual beli",b:N,r:pc(P.ajb),t:N*P.ajb/100,f:P.ajbShare/100},
+    {l:"Cek, validasi & PNBP balik nama pembeli",t:P.balik,f:0},
+    {l:"Komisi agen/makelar",b:N,r:pc(P.agen),t:N*P.agen/100,f:1}].filter(x=>x.on!==false);
+  const waris = [
+    {l:"BPHTB waris",b:N,r:pc(P.bphtb)+", NPOPTKP "+rp(P.npW)+"/ahli waris",t:bwT,f:1},
+    {l:"Surat keterangan waris",t:P.skw,f:1},
+    {l:"Akta Pembagian Hak Bersama",t:P.aphb,f:1},
+    {l:"PNBP, cek & validasi balik nama waris",t:P.pnbp,f:1}];
+  const sum=(a,k)=>a.reduce((s,x)=>s+(k==="f"?x.t*x.f:x.t),0);
+  const sT=sum(sale,"t"), sF=sum(sale,"f"), wT=sum(waris,"t"), wF=sum(waris,"f");
+  const heirs = R.filter(x=>x.pay||true).map((x,i)=>({n:x.n.replace(" (Pembeli)",""),p:x.p,gross:N*x.p,
+    cs:(sF-(pp?bwT:0))*x.p+(pp?bw[i]:0), cw:(wF-bwT)*x.p+bw[i]}));
+  return {sale,waris,sT,sF,wT,wF,heirs,N};
+}
+function renderTax(){
+  const T=taxCalc(), N=T.N;
+  $("taxSub").textContent = `Dasar perhitungan: nilai waris ${rp(N)} (${S.locked?"final, terkunci":"estimasi"}) · Kota Cimahi, Jawa Barat`;
+  const tb = (rows,tt,tf) => `<table><thead><tr><th>Komponen</th><th>Dasar</th><th>Tarif</th><th>Total</th><th>Ditanggung Keluarga</th><th>Pembayar</th></tr></thead><tbody>` +
+    rows.map(x=>`<tr><td><b>${x.l}</b></td><td>${x.b!=null?rp(x.b):"-"}</td><td style="white-space:normal">${x.r||"-"}</td><td>${rp(x.t)}</td><td>${rp(x.t*x.f)}</td><td>${x.f>=1?"Keluarga":x.f<=0?"Pembeli":"Keluarga "+nm(x.f*100,0)+"%, pembeli"}</td></tr>`).join("") +
+    `<tr class="tot"><td>Total</td><td></td><td></td><td>${rp(tt)}</td><td>${rp(tf)}</td><td></td></tr></tbody></table>`;
+  $("tSale").innerHTML = tb(T.sale,T.sT,T.sF); $("tWaris").innerHTML = tb(T.waris,T.wT,T.wF);
+  const d = T.sF-T.wF, pct = v => N?nm(v/N*100,2)+"% dari nilai":"-";
+  $("tkpi").innerHTML = `
+    <div class="kpi warn"><span>Biaya keluarga · Dijual</span><b>${rp(T.sF)}</b><small>${pct(T.sF)} · semua pihak ${rp(T.sT)}</small></div>
+    <div class="kpi ok"><span>Biaya keluarga · Diwariskan</span><b>${rp(T.wF)}</b><small>${pct(T.wF)}</small></div>
+    <div class="kpi"><span>Selisih biaya</span><b>${rp(Math.abs(d))}</b><small>${d===0?"Sama":d>0?"Dijual lebih mahal":"Diwariskan lebih mahal"}</small></div>
+    <div class="kpi"><span>Nilai bersih keluarga</span><b>${rp(N-T.sF)}</b><small>jika dijual (tunai) · jika diwariskan ${rp(N-T.wF)} (aset)</small></div>`;
+  $("tHeir").innerHTML = `<table><thead><tr><th>Ahli Waris</th><th>Hak</th><th>Nilai Bagian</th><th>Biaya Jual</th><th>Bersih Jual</th><th>Biaya Waris</th><th>Bersih Waris</th><th>Selisih Biaya</th></tr></thead><tbody>` +
+    T.heirs.map(h=>`<tr><td><b>${h.n}</b></td><td>${nm(h.p*100,2)}%</td><td>${rp(h.gross)}</td><td>${rp(h.cs)}</td><td>${rp(h.gross-h.cs)}</td><td>${rp(h.cw)}</td><td>${rp(h.gross-h.cw)}</td><td>${rp(h.cs-h.cw)}</td></tr>`).join("") +
+    `<tr class="tot"><td>Total</td><td>100%</td><td>${rp(N)}</td><td>${rp(T.sF)}</td><td>${rp(N-T.sF)}</td><td>${rp(T.wF)}</td><td>${rp(N-T.wF)}</td><td>${rp(d)}</td></tr></tbody></table>`;
+  lab($("tSale")); lab($("tWaris")); lab($("tHeir"));
+  const adm = isAdmin();
+  $("pSub").textContent = adm ? "Ubah angka sesuai kebutuhan, lalu tekan Simpan Update agar tampil sama untuk semua pengunjung. Ubah ke Default mengembalikan angka bawaan aplikasi." : "Angka asumsi yang dipakai pada perhitungan di atas (hanya superadmin yang dapat mengubah).";
+  PARAMS.forEach(q=>{ const el=$("p_"+q.k); if(!el) return; el.disabled=!adm;
+    if(q.t==="bool") el.checked=!!P[q.k]; else if(document.activeElement!==el) el.value = q.t==="Rp" ? P[q.k].toLocaleString("id-ID") : String(P[q.k]).replace(".",","); });
+  
+}
+function buildParams(){
+  $("tparams").innerHTML = PARAMS.map(q=> q.t==="bool"
+    ? `<div><label class="sw" style="margin-top:22px"><input type="checkbox" id="p_${q.k}" data-k="${q.k}"><span>${q.l}</span></label><div class="hint">${q.h}</div></div>`
+    : `<div><label>${q.l}</label><input id="p_${q.k}" data-k="${q.k}" data-t="${q.t}" inputmode="decimal"><div class="hint">${q.h}</div></div>`).join("");
+}
+$("tparams").addEventListener("input",e=>{ const el=e.target,k=el.dataset.k; if(!k||!isAdmin()) return;
+  if(el.type==="checkbox") P[k]=el.checked;
+  else if(el.dataset.t==="Rp"){ const v=dig(el.value); el.value=v?v.toLocaleString("id-ID"):""; P[k]=v; }
+  else { el.value=el.value.replace(/[^\d,.]/g,""); P[k]=parseFloat(el.value.replace(",","."))||0; }
+  render(); });
+function renderNav(){
+  const show = S.showTax || isAdmin() || !ready;
+  if(!show && S.view==="tax") S.view="main";
+  $("nav").hidden = !show;
+  $("nav").innerHTML = `<button class="${S.view==="main"?"on":""}" data-v="main">Perhitungan Waris</button><button class="${S.view==="tax"?"on":""}" data-v="tax">Estimasi Pajak & Biaya${S.showTax||!ready?"":" (tersembunyi)"}</button>`;
+  $("v-main").hidden = S.view!=="main"; $("v-tax").hidden = S.view!=="tax";
+  $("swWrap").hidden = !isAdmin(); $("showTax").checked = S.showTax; $("tAdmBtns").hidden = !isAdmin();
+  const hide = isAdmin() && !S.showTax;
+  $("taxNote").hidden = !(hide || !S.nilai);
+  $("taxNote").textContent = hide ? "Tab ini saat ini tersembunyi bagi pengunjung tanpa login. Aktifkan sakelar di kanan atas untuk menampilkannya." : "Nilai waris masih 0. Isi nilai pada tab Perhitungan Waris untuk melihat estimasi.";
+}
+$("nav").onclick = e => { const v=e.target.dataset.v; if(v){S.view=v;render();window.scrollTo(0,0);} };
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ---------- input ---------- */
@@ -207,7 +330,7 @@ money($("nilai"),"nilai"); money($("cicil"),"cicil");
 $("pAmt").addEventListener("input",e=>{const v=dig(e.target.value);e.target.value=v?v.toLocaleString("id-ID"):"";});
 $("tabs").onclick = e => { const t=e.target.dataset.t; if(t){S.tab=t;render();} };
 $("pHeir").innerHTML = HEIRS.filter(h=>h.pay).map(h=>`<option value="${h.k}">${h.n}</option>`).join("");
-$("pDate").valueAsDate = new Date();
+$("pDate").valueAsDate = new Date(); buildParams();
 
 if(!ready){ $("cfgwarn").hidden=false; $("auth").disabled=true; }
 render();
@@ -222,12 +345,13 @@ if(ready){
 
   F.onSnapshot(cfgRef, s=>{
     const d = s.exists() ? s.data() : {};
-    S.locked = !!d.locked;
+    S.locked = !!d.locked; S.showTax = !!d.showTax;
     if(S.locked) S.nilai = d.nilai;
     S.cfgCicil = d.cicilan || null;
     if(S.cfgCicil && !S.touched) S.cicil = S.cfgCicil;
     render();
   });
+  F.onSnapshot(F.doc(db,"config","tax"), s=>{ P = {...DEF, ...((s.exists()&&s.data().params)||{})}; render(); });
   F.onSnapshot(F.query(F.collection(db,"payments"),F.orderBy("date","desc")), s=>{
     S.pays = s.docs.map(d=>({id:d.id,...d.data()})); render();
   });
@@ -245,11 +369,14 @@ if(ready){
       }
       if(id==="bUnlock" && confirm("Buka kunci nilai waris? Data pelunasan yang sudah ada tidak dihapus."))
         await F.setDoc(cfgRef,{locked:false},{merge:true});
+      if(id==="bTaxSave"){ await F.setDoc(F.doc(db,"config","tax"),{params:P,updatedAt:F.serverTimestamp(),by:S.user.email}); alert("Asumsi pajak & biaya disimpan."); }
+      if(id==="bTaxReset" && confirm("Kembalikan semua asumsi ke angka default? Angka yang tersimpan akan dihapus.")){ P={...DEF}; await F.deleteDoc(F.doc(db,"config","tax")); render(); }
       if(id==="bSaveC"){ await F.setDoc(cfgRef,{cicilan:S.cicil},{merge:true}); alert("Estimasi cicilan resmi disimpan."); }
       if(e.target.dataset.del && confirm("Hapus catatan pelunasan ini?")) await F.deleteDoc(F.doc(db,"payments",e.target.dataset.del));
     }catch(err){ alert("Gagal: "+err.message); }
   });
 
+  $("showTax").addEventListener("change",async e=>{ if(!isAdmin()) return; try{ await F.setDoc(cfgRef,{showTax:e.target.checked},{merge:true}); }catch(err){ alert("Gagal: "+err.message); e.target.checked=S.showTax; } });
   $("pSave").onclick = async () => {
     const amount = dig($("pAmt").value), file = $("pFile").files[0], msg = $("pMsg");
     if(!amount) return alert("Isi jumlah pelunasan.");
